@@ -1,5 +1,5 @@
 # MyChatEXReversed
-ref https://youtu.be/XF7cDkQssyA (check the video for more educational purposes)
+ref https://youtu.be/2hGat2LOQ2Q (check the video for more educational purposes)
 
 ## About
 This project aims to reverse the database and license system used by "Wor MyChat EX". This @Worcome-Studios program is dedicated to messaging.

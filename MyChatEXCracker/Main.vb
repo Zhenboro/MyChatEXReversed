@@ -17,6 +17,8 @@ Public Class Main
     Dim LlaveApp As String = "O91aHsTMe1fBCrRrp3YS"
     Dim LlaveLicencias As String = "APN5QIkEEFpe7gjenLtzJcv5Hx8ñOs"
 
+    Dim ArchivoDeConfiguracionDelServidor As String
+
     'APP DB
     Dim LlaveAppDB As String
     Dim LicenseDB As String
@@ -214,5 +216,110 @@ Public Class Main
 
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
         RichTextBox1.AppendText(vbCrLf & Descifrar(RichTextBox2.Text, InputBox("Ingrese una llave criptografica", "Llave criptografica", LlaveApp & " " & LlaveAppDB)))
+    End Sub
+
+    Dim NombreServidor, IDDueño, FechaCreado, Expira, Verificado, Contraseña, SoloLicenciados, Cifrado As String
+    Dim ServerName, RoomName, Username, Password, Host, OwnerID As String
+    Private Sub Button5_Click(sender As Object, e As EventArgs) Handles Button5.Click
+        Dim CodigoDeAcceso = InputBox("Ingrese su codigo de acceso del servidor propio", "Codigo de Acceso")
+        'Solo para servidores propios (no de Worcome)
+
+        If CodigoDeAcceso = Nothing Then
+        Else
+            'Obtener las credenciales del servidor para poder subir luego el archivo modificado
+
+            Dim RAWContent As String = CodigoDeAcceso
+            Dim DecryptContent As String = Descifrar(RAWContent, LlaveApp)
+            RichTextBox1.AppendText(vbCrLf & "<--- Access Key Raw Content --->")
+            RichTextBox1.AppendText(vbCrLf & RAWContent)
+            RichTextBox1.AppendText(vbCrLf & "<--- Access Key Decrypted Content Loaded --->")
+            RichTextBox1.AppendText(vbCrLf & DecryptContent)
+
+            Dim array As String() = DecryptContent.Split(New Char() {">"c})
+            ServerName = array(0)
+            RoomName = array(1)
+            Username = array(2)
+            Password = array(3)
+            Host = array(4)
+            OwnerID = array(5)
+            InputBox("El codigo de acceso contiene los siguientes elementos", "Codigo de Acceso", DecryptContent)
+            ArchivoDeConfiguracionDelServidor = Directorio1 & "\MCEXC_" & ServerName & ".inf"
+            'Obtener el archivo de configuracion del servidor para modificarlo
+            If My.Computer.FileSystem.FileExists(ArchivoDeConfiguracionDelServidor) Then
+                My.Computer.FileSystem.DeleteFile(ArchivoDeConfiguracionDelServidor)
+            End If
+            My.Computer.Network.DownloadFile(Host & "/" & ServerName & ".inf", ArchivoDeConfiguracionDelServidor, Username, Password)
+
+            'Leer y modificar el archivo de configuracion del servidor
+            Dim RAWContent2 As String = My.Computer.FileSystem.ReadAllText(ArchivoDeConfiguracionDelServidor)
+            Dim DecryptContent2 As String = Descifrar(RAWContent2, LlaveApp)
+            RichTextBox1.AppendText(vbCrLf & "<--- Server Config File Raw Content --->")
+            RichTextBox1.AppendText(vbCrLf & RAWContent2)
+            RichTextBox1.AppendText(vbCrLf & "<--- Server Config File Decrypted Content Loaded --->")
+            RichTextBox1.AppendText(vbCrLf & DecryptContent2)
+
+            Dim textBox As TextBox = New TextBox()
+            textBox.Text = DecryptContent2
+
+            Dim lines As String() = textBox.Lines
+            NombreServidor = lines(1).Split(New Char() {">"c})(1).Trim()
+            IDDueño = lines(2).Split(New Char() {">"c})(1).Trim()
+            FechaCreado = lines(3).Split(New Char() {">"c})(1).Trim()
+            Expira = lines(4).Split(New Char() {">"c})(1).Trim()
+            Verificado = lines(5).Split(New Char() {">"c})(1).Trim()
+            Contraseña = lines(6).Split(New Char() {">"c})(1).Trim()
+            SoloLicenciados = lines(7).Split(New Char() {">"c})(1).Trim()
+
+            TextBox8.Text = NombreServidor
+            TextBox9.Text = IDDueño
+            TextBox10.Text = FechaCreado
+            TextBox11.Text = Expira
+            TextBox12.Text = Verificado
+            textBox13.Text = Contraseña
+            TextBox14.Text = SoloLicenciados
+
+            Try
+                Cifrado = lines(8).Split(New Char() {">"c})(1).Trim()
+                Dim array5 As String() = Cifrado.Split(New Char() {":"c})
+                If array5(0) = "True" Then
+                    TextBox15.Text = array5(0) & ":" & array5(1)
+                Else
+                    TextBox15.Text = "La sala no tiene cifrado"
+                    TextBox15.Enabled = False
+                End If
+            Catch
+            End Try
+        End If
+    End Sub
+
+    Private Sub Button6_Click(sender As Object, e As EventArgs) Handles Button6.Click
+        If TextBox15.Text = "La sala no tiene cifrado" Then
+            Cifrado = "False:None"
+        End If
+
+        NombreServidor = TextBox8.Text
+        IDDueño = TextBox9.Text
+        FechaCreado = TextBox10.Text
+        Expira = TextBox11.Text
+        Verificado = TextBox12.Text
+        Contraseña = TextBox13.Text
+        SoloLicenciados = TextBox14.Text
+
+        Dim RAWContent As String = "#Worcome Server Services | MyChat EX - Global Party Information" &
+            vbCrLf & "Server>" & NombreServidor &
+            vbCrLf & "OwnerID>" & IDDueño &
+            vbCrLf & "Created>" & FechaCreado &
+            vbCrLf & "Expire>" & Expira &
+            vbCrLf & "Verified>" & Verificado &
+            vbCrLf & "Password>" & Contraseña &
+            vbCrLf & "OnlyLicencedUsers>" & SoloLicenciados &
+            vbCrLf & "Cipher>" & Cifrado
+        Dim EncryptContent As String = Cifrar(RAWContent, LlaveApp)
+
+        'Escribimos los datos modificados en el archivo
+        My.Computer.FileSystem.WriteAllText(ArchivoDeConfiguracionDelServidor, EncryptContent, False)
+
+        'Subimos el nuevo archivo al servidor
+        My.Computer.Network.UploadFile(ArchivoDeConfiguracionDelServidor, Host & "/" & ServerName & ".inf", Username, Password)
     End Sub
 End Class
